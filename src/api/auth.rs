@@ -2,7 +2,7 @@ use actix_web::{post, web, HttpResponse, Responder};
 use serde_json::json;
 use crate::{
     api::AppState,
-    models::SignUpRequest,
+    models::{MessageResponse, SignUpRequest},
     services::AuthService,
 };
 
@@ -11,21 +11,18 @@ pub async fn sign_up(
     state: web::Data<AppState>,
     data: web::Json<SignUpRequest>,
 ) -> impl Responder {
-    // Validate email availability
-    match AuthService::validate_email_available(&state.pool, &data.email).await {
-        Ok(_) => {
-            // Email is available
-            HttpResponse::Ok().json(json!({
-                "status": "success",
-                "message": format!("Sign Up: {:?}", data)
-            }))
+    match AuthService::sign_up(&state.pool, data.into_inner()).await {
+        Ok(_user_id) => {
+            HttpResponse::Created().json(MessageResponse {
+                status: "success".to_string(),
+                message: "Account created successfully".to_string(),
+            })
         }
         Err(e) => {
-            // Email already exists or database error
-            HttpResponse::BadRequest().json(json!({
-                "status": "error",
-                "message": e.to_string()
-            }))
+            HttpResponse::UnprocessableEntity().json(MessageResponse {
+                status: "error".to_string(),
+                message: e.to_string(),
+            })
         }
     }
 }

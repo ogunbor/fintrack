@@ -4,6 +4,7 @@ use std::fmt;
 pub enum DomainError {
     EmailAlreadyExists,
     InvalidCredentials,
+    ValidationError(String),
     DatabaseError(String),
     NotFound,
 }
@@ -13,6 +14,7 @@ impl fmt::Display for DomainError {
         match self {
             DomainError::EmailAlreadyExists => write!(f, "Email already exists"),
             DomainError::InvalidCredentials => write!(f, "Invalid credentials"),
+            DomainError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
             DomainError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
             DomainError::NotFound => write!(f, "Resource not found"),
         }
