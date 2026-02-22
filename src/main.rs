@@ -12,8 +12,11 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create database pool");
 
-    // Create app state
-    let app_state = web::Data::new(AppState { pool });
+    // Create app state with JWT secret
+    let app_state = web::Data::new(AppState {
+        pool,
+        jwt_secret: settings.jwt_secret.clone(),  // ← Add this
+    });
 
     println!("Server starting at http://{}:{}", settings.host, settings.port);
 

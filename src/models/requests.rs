@@ -9,7 +9,7 @@ pub struct SignUpRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SignInRequest {
+pub struct SignInRequest { 
     pub email: String,
     pub password: String,
 }

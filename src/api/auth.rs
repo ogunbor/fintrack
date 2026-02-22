@@ -1,9 +1,9 @@
 use actix_web::{post, web, HttpResponse, Responder};
-use serde_json::json;
 use crate::{
     api::AppState,
-    models::{MessageResponse, SignUpRequest},
+    models::{AuthResponse, MessageResponse, SignInRequest, SignUpRequest},
     services::AuthService,
+    utils::jwt::create_jwt_token,
 };
 
 #[post("/auth/sign-up")]
@@ -28,8 +28,35 @@ pub async fn sign_up(
 }
 
 #[post("/auth/sign-in")]
-pub async fn sign_in() -> impl Responder {
-    HttpResponse::Ok().body("Sign In")
+pub async fn sign_in(
+    state: web::Data<AppState>,
+    data: web::Json<SignInRequest>,
+) -> impl Responder {
+    match AuthService::sign_in(&state.pool, data.into_inner()).await {
+        Ok(user) => {
+            // Generate JWT token
+            match create_jwt_token(user.id, &state.jwt_secret) {
+                Ok(token) => {
+                    HttpResponse::Ok().json(AuthResponse {
+                        status: "success".to_string(),
+                        token,
+                    })
+                }
+                Err(_) => {
+                    HttpResponse::InternalServerError().json(MessageResponse {
+                        status: "error".to_string(),
+                        message: "Failed to generate token".to_string(),
+                    })
+                }
+            }
+        }
+        Err(e) => {
+            HttpResponse::Unauthorized().json(MessageResponse {
+                status: "error".to_string(),
+                message: e.to_string(),
+            })
+        }
+    }
 }
 
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {

@@ -1,4 +1,5 @@
 use sqlx::MySqlPool;
+use crate::domain::User;
 
 pub struct UserRepository;
 
@@ -32,5 +33,26 @@ impl UserRepository {
         .await?;
 
         Ok(result.last_insert_id())
+    }
+
+    /// Find user by email
+    pub async fn find_by_email(pool: &MySqlPool, email: &str) -> Result<Option<User>, sqlx::Error> {
+        let row = sqlx::query!(
+            "SELECT id, email, password, firstname, lastname, balance, created_at, updated_at FROM users WHERE email = ?",
+            email
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(|r| User {
+            id: r.id,
+            email: r.email,
+            password_hash: r.password,  // Note: DB column is 'password'
+            firstname: r.firstname,
+            lastname: r.lastname,
+            balance: r.balance,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        }))
     }
 }
