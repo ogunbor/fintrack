@@ -1,16 +1,33 @@
 use actix_web::{post, web, HttpResponse, Responder};
-use crate::models::SignUpRequest;
-use crate::api::AppState;
+use serde_json::json;
+use crate::{
+    api::AppState,
+    models::SignUpRequest,
+    services::AuthService,
+};
 
 #[post("/auth/sign-up")]
 pub async fn sign_up(
     state: web::Data<AppState>,
     data: web::Json<SignUpRequest>,
 ) -> impl Responder {
-    // Access the pool directly - no lock needed!
-    let _pool = &state.pool;
-    
-    HttpResponse::Ok().body(format!("Sign Up: {:?}", data))
+    // Validate email availability
+    match AuthService::validate_email_available(&state.pool, &data.email).await {
+        Ok(_) => {
+            // Email is available
+            HttpResponse::Ok().json(json!({
+                "status": "success",
+                "message": format!("Sign Up: {:?}", data)
+            }))
+        }
+        Err(e) => {
+            // Email already exists or database error
+            HttpResponse::BadRequest().json(json!({
+                "status": "error",
+                "message": e.to_string()
+            }))
+        }
+    }
 }
 
 #[post("/auth/sign-in")]
