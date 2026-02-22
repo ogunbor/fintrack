@@ -1,0 +1,18 @@
+[package]
+name = "fintrack"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4"
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "mysql",
+    "chrono",
+] }
+tokio = { version = "1", features = ["full"] }
+dotenvy = "0.15"
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
