@@ -1,8 +1,15 @@
 use actix_web::{post, web, HttpResponse, Responder};
 use crate::models::SignUpRequest;
+use crate::api::AppState;
 
 #[post("/auth/sign-up")]
-pub async fn sign_up(data: web::Json<SignUpRequest>) -> impl Responder {
+pub async fn sign_up(
+    state: web::Data<AppState>,
+    data: web::Json<SignUpRequest>,
+) -> impl Responder {
+    // Access the pool directly - no lock needed!
+    let _pool = &state.pool;
+    
     HttpResponse::Ok().body(format!("Sign Up: {:?}", data))
 }
 
