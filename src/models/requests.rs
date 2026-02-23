@@ -19,3 +19,9 @@ pub struct UpdateProfileRequest {
     pub firstname: String,
     pub lastname: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateCategoryRequest {
+    pub name: String,
+    pub description: Option<String>,
+}

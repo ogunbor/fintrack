@@ -1,6 +1,7 @@
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use crate::{
     api::{middleware::auth::get_user_id, AppState},
+    models::CreateCategoryRequest,
     services::CategoryService,
 };
 
@@ -18,8 +19,20 @@ pub async fn index(state: web::Data<AppState>, req: HttpRequest) -> impl Respond
 }
 
 #[post("/categories")]
-pub async fn create() -> impl Responder {
-    HttpResponse::Ok().body("Categories: Create")
+pub async fn create(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    data: web::Json<CreateCategoryRequest>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match CategoryService::create(&state.pool, user_id, data.into_inner()).await {
+        Ok(category) => HttpResponse::Created().json(category),
+        Err(e) => HttpResponse::BadRequest().json(serde_json::json!({
+            "status": "error",
+            "message": e.to_string()
+        })),
+    }
 }
 
 #[get("/categories/{id}")]
