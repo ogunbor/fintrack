@@ -1,8 +1,20 @@
-use actix_web::{delete, get, post, put, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
+use crate::{
+    api::{middleware::auth::get_user_id, AppState},
+    services::CategoryService,
+};
 
 #[get("/categories")]
-pub async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Categories: List")
+pub async fn index(state: web::Data<AppState>, req: HttpRequest) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match CategoryService::get_all_for_user(&state.pool, user_id).await {
+        Ok(categories) => HttpResponse::Ok().json(categories),
+        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+            "status": "error",
+            "message": e.to_string()
+        })),
+    }
 }
 
 #[post("/categories")]
