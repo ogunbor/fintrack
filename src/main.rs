@@ -30,6 +30,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .wrap(from_fn(api::verify_jwt))  // ← Apply middleware
                     .configure(api::configure_users)
+                    .configure(api::configure_categories)
             )
     })
     .bind((settings.host.as_str(), settings.port))?
