@@ -36,8 +36,39 @@ pub async fn create(
 }
 
 #[get("/categories/{id}")]
-pub async fn show() -> impl Responder {
-    HttpResponse::Ok().body("Categories: Show")
+pub async fn show(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match CategoryService::get_by_id(&state.pool, id.into_inner(), user_id).await {
+        Ok(category) => HttpResponse::Ok().json(category),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 #[put("/categories/{id}")]

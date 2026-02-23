@@ -24,7 +24,6 @@ impl CategoryService {
         user_id: u64,
         request: CreateCategoryRequest,
     ) -> Result<Category, DomainError> {
-        // Create category
         let category_id = CategoryRepository::create(
             pool,
             user_id,
@@ -34,10 +33,28 @@ impl CategoryService {
         .await
         .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
 
-        // Fetch and return created category
         CategoryRepository::find_by_id(pool, category_id)
             .await
             .map_err(|e| DomainError::DatabaseError(e.to_string()))?
             .ok_or(DomainError::NotFound)
+    }
+
+    /// Get category by ID (with ownership check)
+    pub async fn get_by_id(
+        pool: &MySqlPool,
+        category_id: u64,
+        user_id: u64,
+    ) -> Result<Category, DomainError> {
+        let category = CategoryRepository::find_by_id(pool, category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // Verify ownership
+        if category.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        Ok(category)
     }
 }
