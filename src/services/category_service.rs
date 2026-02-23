@@ -91,4 +91,29 @@ impl CategoryService {
             .map_err(|e| DomainError::DatabaseError(e.to_string()))?
             .ok_or(DomainError::NotFound)
     }
+
+    /// Delete a category (with ownership verification)
+    pub async fn delete(
+        pool: &MySqlPool,
+        category_id: u64,
+        user_id: u64,
+    ) -> Result<(), DomainError> {
+        // 1. Fetch category
+        let category = CategoryRepository::find_by_id(pool, category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 2. Verify ownership
+        if category.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        // 3. Delete category
+        CategoryRepository::delete(pool, category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
 }

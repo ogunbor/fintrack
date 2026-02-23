@@ -86,4 +86,13 @@ impl CategoryRepository {
 
         Ok(())
     }
+
+     /// Delete a category
+    pub async fn delete(pool: &MySqlPool, id: u64) -> Result<(), sqlx::Error> {
+        sqlx::query!("DELETE FROM categories WHERE id = ?", id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
 }

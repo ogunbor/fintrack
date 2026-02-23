@@ -97,8 +97,42 @@ pub async fn update(
 }
 
 #[delete("/categories/{id}")]
-pub async fn destroy() -> impl Responder {
-    HttpResponse::Ok().body("Categories: Destroy")
+pub async fn destroy(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match CategoryService::delete(&state.pool, id.into_inner(), user_id).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "status": "success",
+            "message": "Category deleted successfully"
+        })),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {
