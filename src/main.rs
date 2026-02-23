@@ -4,8 +4,7 @@ use fintrack::{api, configuration, AppState, Settings};
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Load configuration
-    let settings = Settings::from_env()
-        .expect("Failed to load configuration");
+    let settings = Settings::from_env().expect("Failed to load configuration");
 
     // Create database pool
     let pool = configuration::database::create_pool(&settings.database_url)
@@ -18,7 +17,10 @@ async fn main() -> std::io::Result<()> {
         jwt_secret: settings.jwt_secret.clone(),
     });
 
-    println!("Server starting at http://{}:{}", settings.host, settings.port);
+    println!(
+        "Server starting at http://{}:{}",
+        settings.host, settings.port
+    );
 
     HttpServer::new(move || {
         App::new()
@@ -28,9 +30,9 @@ async fn main() -> std::io::Result<()> {
             // Protected routes (auth required)
             .service(
                 web::scope("/api")
-                    .wrap(from_fn(api::verify_jwt))  // ← Apply middleware
+                    .wrap(from_fn(api::verify_jwt)) // ← Apply middleware
                     .configure(api::configure_users)
-                    .configure(api::configure_categories)
+                    .configure(api::configure_categories),
             )
     })
     .bind((settings.host.as_str(), settings.port))?

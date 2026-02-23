@@ -1,9 +1,9 @@
-use sqlx::MySqlPool;
 use crate::{
     domain::{Category, DomainError},
-    models::CreateCategoryRequest,
+    models::{CreateCategoryRequest, UpdateCategoryRequest},
     repositories::CategoryRepository,
 };
+use sqlx::MySqlPool;
 
 pub struct CategoryService;
 
@@ -56,5 +56,39 @@ impl CategoryService {
         }
 
         Ok(category)
+    }
+
+    pub async fn update(
+        pool: &MySqlPool,
+        category_id: u64,
+        user_id: u64,
+        request: UpdateCategoryRequest,
+    ) -> Result<Category, DomainError> {
+        // 1. Fetch category
+        let category = CategoryRepository::find_by_id(pool, category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 2. Verify ownership
+        if category.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        // 3. Update category
+        CategoryRepository::update(
+            pool,
+            category_id,
+            &request.name,
+            request.description.as_deref(),
+        )
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        // 4. Fetch and return updated category
+        CategoryRepository::find_by_id(pool, category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)
     }
 }

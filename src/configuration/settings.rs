@@ -12,10 +12,8 @@ impl Settings {
 
         let database_url = std::env::var("DATABASE_URL")?;
 
-
-        let jwt_secret = std::env::var("JWT_SECRET")?; 
-        let host = std::env::var("HOST")
-            .unwrap_or_else(|_| "127.0.0.1".to_string());
+        let jwt_secret = std::env::var("JWT_SECRET")?;
+        let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "8080".to_string())
             .parse()?;

@@ -1,9 +1,9 @@
-use sqlx::MySqlPool;
 use crate::{
     domain::{DomainError, User},
     models::UpdateProfileRequest,
     repositories::UserRepository,
 };
+use sqlx::MySqlPool;
 
 pub struct UserService;
 

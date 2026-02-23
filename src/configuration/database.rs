@@ -1,4 +1,4 @@
-use sqlx::{MySql, Pool, mysql::MySqlPoolOptions};
+use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 use std::time::Duration;
 
 pub type DbPool = Pool<MySql>;

@@ -1,19 +1,16 @@
-use sqlx::MySqlPool;
 use crate::{
     domain::{DomainError, User},
     models::{SignInRequest, SignUpRequest},
     repositories::UserRepository,
     utils::password::{hash_password, verify_password},
 };
+use sqlx::MySqlPool;
 
 pub struct AuthService;
 
 impl AuthService {
     /// Sign up a new user
-    pub async fn sign_up(
-        pool: &MySqlPool,
-        request: SignUpRequest,
-    ) -> Result<u64, DomainError> {
+    pub async fn sign_up(pool: &MySqlPool, request: SignUpRequest) -> Result<u64, DomainError> {
         // Check if email already exists
         let email_exists = UserRepository::exists_by_email(pool, &request.email)
             .await
@@ -42,10 +39,7 @@ impl AuthService {
     }
 
     /// Sign in an existing user
-    pub async fn sign_in(
-        pool: &MySqlPool,
-        request: SignInRequest,
-    ) -> Result<User, DomainError> {
+    pub async fn sign_in(pool: &MySqlPool, request: SignInRequest) -> Result<User, DomainError> {
         // Find user by email
         let user = UserRepository::find_by_email(pool, &request.email)
             .await

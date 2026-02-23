@@ -4,9 +4,9 @@ use std::time::SystemTime;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: u64,        // Subject (user ID)
-    pub role: String,    // User role
-    pub exp: u64,        // Expiration time
+    pub sub: u64,     // Subject (user ID)
+    pub role: String, // User role
+    pub exp: u64,     // Expiration time
 }
 
 pub fn create_jwt_token(user_id: u64, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {

@@ -1,9 +1,9 @@
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 use crate::{
     api::{middleware::auth::get_user_id, AppState},
     models::UpdateProfileRequest,
     services::UserService,
 };
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
 
 #[get("/me")]
 pub async fn get_profile(state: web::Data<AppState>, req: HttpRequest) -> impl Responder {
@@ -36,6 +36,5 @@ pub async fn update_profile(
 }
 
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {
-    cfg.service(get_profile)
-       .service(update_profile);
+    cfg.service(get_profile).service(update_profile);
 }

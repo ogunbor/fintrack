@@ -1,5 +1,5 @@
-use sqlx::MySqlPool;
 use crate::domain::User;
+use sqlx::MySqlPool;
 
 pub struct UserRepository;
 
@@ -10,7 +10,7 @@ impl UserRepository {
             .bind(email)
             .fetch_optional(pool)
             .await?;
-        
+
         Ok(result.is_some())
     }
 
@@ -23,7 +23,7 @@ impl UserRepository {
         lastname: &str,
     ) -> Result<u64, sqlx::Error> {
         let result = sqlx::query(
-            "INSERT INTO users (email, password, firstname, lastname) VALUES (?, ?, ?, ?)"
+            "INSERT INTO users (email, password, firstname, lastname) VALUES (?, ?, ?, ?)",
         )
         .bind(email)
         .bind(password_hash)

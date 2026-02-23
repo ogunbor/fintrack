@@ -9,7 +9,7 @@ pub struct SignUpRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SignInRequest { 
+pub struct SignInRequest {
     pub email: String,
     pub password: String,
 }
@@ -22,6 +22,12 @@ pub struct UpdateProfileRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateCategoryRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateCategoryRequest {
     pub name: String,
     pub description: Option<String>,
 }
