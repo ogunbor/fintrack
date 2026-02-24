@@ -31,3 +31,12 @@ pub struct UpdateCategoryRequest {
     pub name: String,
     pub description: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateTransactionRequest {
+    pub category_id: u64,
+    pub r#type: String,  // "CREDIT" or "DEBIT"
+    pub amount: u64,
+    pub memo: String,
+    pub description: Option<String>,
+}

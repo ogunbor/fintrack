@@ -28,4 +28,54 @@ impl TransactionRepository {
             updated_at: r.updated_at,
         }).collect())
     }
+
+    /// Find transaction by ID
+    pub async fn find_by_id(
+        pool: &MySqlPool,
+        id: u64,
+    ) -> Result<Option<Transaction>, sqlx::Error> {
+        let row = sqlx::query!(
+            "SELECT id, user_id, category_id, type, amount, memo, description, created_at, updated_at FROM transactions WHERE id = ?",
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(|r| Transaction {
+            id: r.id,
+            user_id: r.user_id,
+            category_id: r.category_id,
+            r#type: r.r#type,
+            amount: r.amount,
+            memo: r.memo,
+            description: r.description,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        }))
+    }
+
+    /// Create a new transaction
+    pub async fn create(
+        pool: &MySqlPool,
+        user_id: u64,
+        category_id: u64,
+        r#type: &str,
+        amount: u64,
+        memo: &str,
+        description: Option<&str>,
+    ) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query!(
+            "INSERT INTO transactions (user_id, category_id, type, amount, memo, description) VALUES (?, ?, ?, ?, ?, ?)",
+            user_id,
+            category_id,
+            r#type,
+            amount,
+            memo,
+            description
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(result.last_insert_id())
+    }
 }

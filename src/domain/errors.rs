@@ -7,6 +7,7 @@ pub enum DomainError {
     DatabaseError(String),
     NotFound,
     Unauthorized,
+    InvalidInput(String),
 }
 
 impl fmt::Display for DomainError {
@@ -17,6 +18,7 @@ impl fmt::Display for DomainError {
             DomainError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
             DomainError::NotFound => write!(f, "Resource not found"),
             DomainError::Unauthorized => write!(f, "Unauthorized"),
+            DomainError::InvalidInput(msg) => write!(f, "{}", msg),
         }
     }
 }

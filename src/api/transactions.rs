@@ -1,6 +1,7 @@
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use crate::{
     api::{middleware::auth::get_user_id, AppState},
+    models::CreateTransactionRequest,
     services::TransactionService,
 };
 
@@ -18,8 +19,45 @@ pub async fn index(state: web::Data<AppState>, req: HttpRequest) -> impl Respond
 }
 
 #[post("/transactions")]
-pub async fn create() -> impl Responder {
-    HttpResponse::Ok().body("Transactions: Create")
+pub async fn create(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    data: web::Json<CreateTransactionRequest>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match TransactionService::create(&state.pool, user_id, data.into_inner()).await {
+        Ok(transaction) => HttpResponse::Created().json(transaction),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Category not found"
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Unauthorized - category does not belong to you"
+                    }))
+                }
+                DomainError::InvalidInput(msg) => {
+                    HttpResponse::BadRequest().json(serde_json::json!({
+                        "status": "error",
+                        "message": msg
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 #[get("/transactions/{id}")]
