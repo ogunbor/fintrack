@@ -8,6 +8,7 @@ pub enum DomainError {
     NotFound,
     Unauthorized,
     InvalidInput(String),
+    InsufficientBalance,
 }
 
 impl fmt::Display for DomainError {
@@ -19,6 +20,7 @@ impl fmt::Display for DomainError {
             DomainError::NotFound => write!(f, "Resource not found"),
             DomainError::Unauthorized => write!(f, "Unauthorized"),
             DomainError::InvalidInput(msg) => write!(f, "{}", msg),
+            DomainError::InsufficientBalance => write!(f, "Insufficient balance"),
         }
     }
 }

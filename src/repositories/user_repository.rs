@@ -95,4 +95,20 @@ impl UserRepository {
 
         Ok(())
     }
+    /// Update user balance
+    pub async fn update_balance(
+        pool: &MySqlPool,
+        id: u64,
+        balance: u64,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE users SET balance = ? WHERE id = ?",
+            balance,
+            id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

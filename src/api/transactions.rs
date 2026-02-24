@@ -43,6 +43,12 @@ pub async fn create(
                         "message": "Unauthorized - category does not belong to you"
                     }))
                 }
+                DomainError::InsufficientBalance => {  // ← Add this
+                    HttpResponse::BadRequest().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Insufficient balance"
+                    }))
+                }
                 DomainError::InvalidInput(msg) => {
                     HttpResponse::BadRequest().json(serde_json::json!({
                         "status": "error",
