@@ -20,15 +20,20 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(app_state.clone())
-            // Public routes
-            .configure(api::configure_auth)
-            // Protected routes
+            // Public routes with rate limiting
+            .service(
+                web::scope("/auth")
+                    .wrap(configuration::auth_rate_limiter())
+                    .configure(api::configure_auth)
+            )
+            // Protected routes with JWT THEN rate limiting
             .service(
                 web::scope("/api")
                     .wrap(from_fn(api::verify_jwt))
+                    .wrap(configuration::api_rate_limiter())
                     .configure(api::configure_users)
                     .configure(api::configure_categories)
-                    .configure(api::configure_transactions) 
+                    .configure(api::configure_transactions)
             )
     })
     .bind((settings.host.as_str(), settings.port))?
