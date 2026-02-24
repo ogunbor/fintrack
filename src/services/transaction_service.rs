@@ -1,7 +1,7 @@
 use sqlx::MySqlPool;
 use crate::{
     domain::{DomainError, Transaction},
-    models::CreateTransactionRequest,
+    models::{CreateTransactionRequest, UpdateTransactionRequest},
     repositories::{CategoryRepository, TransactionRepository, UserRepository},
 };
 
@@ -116,5 +116,39 @@ impl TransactionService {
 
         // 3. Return transaction
         Ok(transaction)
+    }
+    /// Update a transaction (with ownership verification)
+    pub async fn update(
+        pool: &MySqlPool,
+        transaction_id: u64,
+        user_id: u64,
+        request: UpdateTransactionRequest,
+    ) -> Result<Transaction, DomainError> {
+        // 1. Fetch transaction
+        let transaction = TransactionRepository::find_by_id(pool, transaction_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 2. Verify ownership
+        if transaction.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        // 3. Update transaction
+        TransactionRepository::update(
+            pool,
+            transaction_id,
+            &request.memo,
+            request.description.as_deref(),
+        )
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        // 4. Fetch and return updated transaction
+        TransactionRepository::find_by_id(pool, transaction_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)
     }
 }

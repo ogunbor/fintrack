@@ -1,7 +1,7 @@
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use crate::{
     api::{middleware::auth::get_user_id, AppState},
-    models::CreateTransactionRequest,
+    models::{CreateTransactionRequest, UpdateTransactionRequest},
     services::TransactionService,
 };
 
@@ -103,8 +103,40 @@ pub async fn show(
 }
 
 #[put("/transactions/{id}")]
-pub async fn update() -> impl Responder {
-    HttpResponse::Ok().body("Transactions: Update")
+pub async fn update(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+    data: web::Json<UpdateTransactionRequest>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match TransactionService::update(&state.pool, id.into_inner(), user_id, data.into_inner()).await {
+        Ok(transaction) => HttpResponse::Ok().json(transaction),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Transaction not found"
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Unauthorized"
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 #[delete("/transactions/{id}")]

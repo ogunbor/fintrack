@@ -78,4 +78,22 @@ impl TransactionRepository {
 
         Ok(result.last_insert_id())
     }
+     /// Update a transaction (memo and description only)
+    pub async fn update(
+        pool: &MySqlPool,
+        id: u64,
+        memo: &str,
+        description: Option<&str>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "UPDATE transactions SET memo = ?, description = ? WHERE id = ?",
+            memo,
+            description,
+            id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }
