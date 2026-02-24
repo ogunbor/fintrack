@@ -97,4 +97,24 @@ impl TransactionService {
             .map_err(|e| DomainError::DatabaseError(e.to_string()))?
             .ok_or(DomainError::NotFound)
     }
+    /// Get transaction by ID (with ownership check)
+    pub async fn get_by_id(
+        pool: &MySqlPool,
+        transaction_id: u64,
+        user_id: u64,
+    ) -> Result<Transaction, DomainError> {
+        // 1. Fetch transaction
+        let transaction = TransactionRepository::find_by_id(pool, transaction_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 2. Verify ownership
+        if transaction.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        // 3. Return transaction
+        Ok(transaction)
+    }
 }

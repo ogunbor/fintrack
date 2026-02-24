@@ -43,7 +43,7 @@ pub async fn create(
                         "message": "Unauthorized - category does not belong to you"
                     }))
                 }
-                DomainError::InsufficientBalance => {  // ← Add this
+                DomainError::InsufficientBalance => {
                     HttpResponse::BadRequest().json(serde_json::json!({
                         "status": "error",
                         "message": "Insufficient balance"
@@ -67,8 +67,39 @@ pub async fn create(
 }
 
 #[get("/transactions/{id}")]
-pub async fn show() -> impl Responder {
-    HttpResponse::Ok().body("Transactions: Show")
+pub async fn show(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match TransactionService::get_by_id(&state.pool, id.into_inner(), user_id).await {
+        Ok(transaction) => HttpResponse::Ok().json(transaction),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Transaction not found"
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Unauthorized"
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 #[put("/transactions/{id}")]
