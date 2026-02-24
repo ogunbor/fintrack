@@ -222,4 +222,25 @@ impl TransactionService {
 
         Ok(())
     }
+    /// Get all transactions for a category (with category ownership check)
+pub async fn get_category_transactions(
+    pool: &MySqlPool,
+    category_id: u64,
+    user_id: u64,
+) -> Result<Vec<Transaction>, DomainError> {
+    // 1. Verify category exists and user owns it
+    let category = CategoryRepository::find_by_id(pool, category_id)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+        .ok_or(DomainError::NotFound)?;
+
+    if category.user_id != user_id {
+        return Err(DomainError::Unauthorized);
+    }
+
+    // 2. Get transactions
+    TransactionRepository::find_all_by_category(pool, category_id)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))
+}
 }

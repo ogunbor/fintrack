@@ -1,7 +1,7 @@
 use crate::{
     api::{middleware::auth::get_user_id, AppState},
     models::{CreateCategoryRequest, UpdateCategoryRequest},
-    services::CategoryService,
+    services::{CategoryService, TransactionService}, 
 };
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 
@@ -135,10 +135,47 @@ pub async fn destroy(
     }
 }
 
+#[get("/categories/{id}/transactions")]
+pub async fn transactions(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match TransactionService::get_category_transactions(&state.pool, id.into_inner(), user_id).await {
+        Ok(transactions) => HttpResponse::Ok().json(transactions),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Category not found"
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Unauthorized"
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
+}
+
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(index)
         .service(create)
         .service(show)
         .service(update)
-        .service(destroy);
+        .service(destroy)
+        .service(transactions);
 }
