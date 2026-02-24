@@ -151,4 +151,75 @@ impl TransactionService {
             .map_err(|e| DomainError::DatabaseError(e.to_string()))?
             .ok_or(DomainError::NotFound)
     }
+    /// Delete a transaction (with balance reversal)
+    pub async fn delete(
+        pool: &MySqlPool,
+        transaction_id: u64,
+        user_id: u64,
+    ) -> Result<(), DomainError> {
+        // 1. Fetch transaction
+        let transaction = TransactionRepository::find_by_id(pool, transaction_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 2. Verify ownership
+        if transaction.user_id != user_id {
+            return Err(DomainError::Unauthorized);
+        }
+
+        // 3. Fetch user and category
+        let user = UserRepository::find_by_id(pool, user_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        let category = CategoryRepository::find_by_id(pool, transaction.category_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?
+            .ok_or(DomainError::NotFound)?;
+
+        // 4. Check if we can reverse the transaction
+        // For CREDIT deletion: we're removing income, so we need sufficient balance
+        if transaction.r#type == "CREDIT" {
+            if user.balance < transaction.amount {
+                return Err(DomainError::InsufficientBalance);
+            }
+            if category.balance < transaction.amount {
+                return Err(DomainError::InsufficientBalance);
+            }
+        }
+
+        // 5. Calculate reversed balances
+        // CREDIT deletion: subtract amount (reverse the addition)
+        // DEBIT deletion: add amount back (reverse the subtraction)
+        let new_user_balance = if transaction.r#type == "CREDIT" {
+            user.balance - transaction.amount
+        } else {
+            user.balance + transaction.amount
+        };
+
+        let new_category_balance = if transaction.r#type == "CREDIT" {
+            category.balance - transaction.amount
+        } else {
+            category.balance + transaction.amount
+        };
+
+        // 6. Delete transaction
+        TransactionRepository::delete(pool, transaction_id)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        // 7. Update user balance
+        UserRepository::update_balance(pool, user_id, new_user_balance)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        // 8. Update category balance
+        CategoryRepository::update_balance(pool, category.id, new_category_balance)
+            .await
+            .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
 }

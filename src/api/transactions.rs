@@ -140,8 +140,48 @@ pub async fn update(
 }
 
 #[delete("/transactions/{id}")]
-pub async fn destroy() -> impl Responder {
-    HttpResponse::Ok().body("Transactions: Destroy")
+pub async fn destroy(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    id: web::Path<u64>,
+) -> impl Responder {
+    let user_id = get_user_id(&req);
+
+    match TransactionService::delete(&state.pool, id.into_inner(), user_id).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "status": "success",
+            "message": "Transaction deleted successfully"
+        })),
+        Err(e) => {
+            use crate::domain::DomainError;
+            match e {
+                DomainError::NotFound => {
+                    HttpResponse::NotFound().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Transaction not found"
+                    }))
+                }
+                DomainError::Unauthorized => {
+                    HttpResponse::Forbidden().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Unauthorized"
+                    }))
+                }
+                DomainError::InsufficientBalance => {
+                    HttpResponse::BadRequest().json(serde_json::json!({
+                        "status": "error",
+                        "message": "Insufficient balance to delete this transaction"
+                    }))
+                }
+                _ => {
+                    HttpResponse::InternalServerError().json(serde_json::json!({
+                        "status": "error",
+                        "message": e.to_string()
+                    }))
+                }
+            }
+        }
+    }
 }
 
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {

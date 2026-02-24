@@ -96,4 +96,12 @@ impl TransactionRepository {
 
         Ok(())
     }
+     /// Delete a transaction
+    pub async fn delete(pool: &MySqlPool, id: u64) -> Result<(), sqlx::Error> {
+        sqlx::query!("DELETE FROM transactions WHERE id = ?", id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
 }
